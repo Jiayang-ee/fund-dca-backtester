@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>基金定投回测工具</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background: #f5f5f5; }
+    h1 { color: #333; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #444; }
+    input, select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+    select { appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.75rem center; padding-right: 2rem; }
+    button { background: #0070f3; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    button:hover:not(:disabled) { background: #0051a8; }
+    .error { color: #d32f2f; margin-top: 0.25rem; font-size: 0.875rem; }
+    .state-msg { padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .loading { background: #e3f2fd; color: #1565c0; }
+    .empty { background: #fff3e0; color: #e65100; }
+    .error-state { background: #ffebee; color: #c62828; }
+    #result { background: #fff; padding: 1rem; border-radius: 4px; margin-top: 1rem; }
+    #result h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: #333; }
+    .result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #eee; }
+    .result-row:last-child { border-bottom: none; }
+    .result-label { color: #666; }
+    .result-value { font-weight: 600; color: #333; }
+    .positive { color: #2e7d32; }
+    .negative { color: #c62828; }
+  </style>
+</head>
+<body>
+  <h1>基金定投回测工具</h1>
+
+  <div id="fund-state" class="state-msg loading" style="display:none">加载基金列表中...</div>
+
+  <form id="backtest-form">
+    <div class="form-group">
+      <label for="fund-select">选择基金</label>
+      <select id="fund-select" name="fundCode" required>
+        <option value="">-- 请选择基金 --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="start-date">开始日期</label>
+      <input type="date" id="start-date" name="startDate" value="2023-01-01" required />
+    </div>
+
+    <div class="form-group">
+      <label for="end-date">结束日期</label>
+      <input type="date" id="end-date" name="endDate" value="2024-12-31" required />
+    </div>
+
+    <div class="form-group">
+      <label for="amount">每期定投金额（元）</label>
+      <input type="number" id="amount" name="periodicAmount" value="1000" min="1" required />
+    </div>
+
+    <div class="form-group">
+      <label for="frequency">定投频率</label>
+      <select id="frequency" name="frequency">
+        <option value="weekly">每周</option>
+        <option value="monthly" selected>每月</option>
+      </select>
+    </div>
+
+    <button type="submit" id="submit-btn">开始回测</button>
+    <div id="form-error" class="error" style="display:none;margin-top:0.5rem;"></div>
+  </form>
+
+  <div id="result" style="display:none"></div>
+
+  <script>
+    const fundSelect = document.getElementById('fund-select');
+    const fundState = document.getElementById('fund-state');
+    const backtestForm = document.getElementById('backtest-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const formError = document.getElementById('form-error');
+    const resultDiv = document.getElementById('result');
+
+    // 加载基金列表
+    async function loadFunds() {
+      fundState.style.display = 'block';
+      fundState.className = 'state-msg loading';
+      fundState.textContent = '加载基金列表中...';
+      fundSelect.disabled = true;
+
+      try {
+        const resp = await fetch('/api/funds');
+        if (!resp.ok) throw new Error('网络错误');
+        const data = await resp.json();
+        const funds = data.funds || [];
+
+        if (funds.length === 0) {
+          fundState.className = 'state-msg empty';
+          fundState.textContent = '暂无基金数据';
+          fundSelect.innerHTML = '<option value="">-- 暂无可用基金 --</option>';
+        } else {
+          fundState.style.display = 'none';
+          fundSelect.innerHTML = '<option value="">-- 请选择基金 --</option>';
+          funds.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.fundCode;
+            opt.textContent = `${f.fundName} (${f.fundCode})`;
+            fundSelect.appendChild(opt);
+          });
+          fundSelect.disabled = false;
+        }
+      } catch (err) {
+        fundState.className = 'state-msg error-state';
+        fundState.textContent = '获取基金列表失败，请刷新重试';
+        fundSelect.innerHTML = '<option value="">-- 加载失败 --</option>';
+        console.error('Failed to load funds:', err);
+      }
+    }
+
+    // 格式化数字
+    function fmtRate(v) {
+      return (v * 100).toFixed(2) + '%';
+    }
+
+    // 渲染结果
+    function renderResult(data) {
+      const s = data.summary;
+      resultDiv.innerHTML = `
+        <h2>${data.fundName} 回测结果</h2>
+        <div class="result-row"><span class="result-label">总投入</span><span class="result-value">¥${s.totalInvested.toFixed(2)}</span></div>
+        <div class="result-row"><span class="result-label">期末资产</span><span class="result-value">¥${s.endingAssets.toFixed(2)}</span></div>
+        <div class="result-row"><span class="result-label">总收益</span><span class="result-value ${s.totalProfit >= 0 ? 'positive' : 'negative'}">¥${s.totalProfit.toFixed(2)} (${fmtRate(s.totalReturnRate)})</span></div>
+        <div class="result-row"><span class="result-label">最大回撤</span><span class="result-value ${s.maxDrawdown < 0 ? 'negative' : ''}">${fmtRate(s.maxDrawdown)}</span></div>
+        <div class="result-row"><span class="result-label">定投收益率</span><span class="result-value ${s.totalReturnRate >= 0 ? 'positive' : 'negative'}">${fmtRate(s.totalReturnRate)}</span></div>
+        <div class="result-row"><span class="result-label">一次性买入收益率</span><span class="result-value ${s.lumpSumReturnRate >= 0 ? 'positive' : 'negative'}">${fmtRate(s.lumpSumReturnRate)}</span></div>
+      `;
+      resultDiv.style.display = 'block';
+    }
+
+    // 提交回测
+    backtestForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.style.display = 'none';
+      resultDiv.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = '计算中...';
+
+      const formData = new FormData(backtestForm);
+      const payload = {
+        fundCode: formData.get('fundCode'),
+        startDate: formData.get('startDate'),
+        endDate: formData.get('endDate'),
+        periodicAmount: Number(formData.get('periodicAmount')),
+        frequency: formData.get('frequency'),
+        // 演示用净值数据（实际应从基金数据服务获取）
+        navData: [
+          { date: '2023-01-03', nav: 1.20 },
+          { date: '2023-01-10', nav: 1.18 },
+          { date: '2023-01-17', nav: 1.22 },
+          { date: '2023-01-24', nav: 1.19 },
+          { date: '2023-01-31', nav: 1.15 },
+          { date: '2023-02-07', nav: 1.21 },
+          { date: '2023-02-14', nav: 1.25 },
+          { date: '2023-02-21', nav: 1.23 },
+          { date: '2023-02-28', nav: 1.28 },
+          { date: '2023-03-07', nav: 1.26 },
+          { date: '2023-03-14', nav: 1.30 },
+          { date: '2023-03-21', nav: 1.27 },
+          { date: '2023-03-28', nav: 1.24 },
+          { date: '2023-04-04', nav: 1.22 },
+          { date: '2023-04-11', nav: 1.20 },
+          { date: '2023-04-18', nav: 1.18 },
+          { date: '2023-04-25', nav: 1.15 },
+          { date: '2023-05-02', nav: 1.19 },
+          { date: '2023-05-09', nav: 1.24 },
+          { date: '2023-05-16', nav: 1.22 },
+        ],
+      };
+
+      try {
+        const resp = await fetch('/api/backtest/dca', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (data.error) {
+          formError.textContent = data.error.message || '回测失败';
+          formError.style.display = 'block';
+        } else {
+          renderResult(data);
+        }
+      } catch (err) {
+        formError.textContent = '请求失败，请检查网络';
+        formError.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '开始回测';
+      }
+    });
+
+    loadFunds();
+  </script>
+</body>
+</html>
