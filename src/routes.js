@@ -9,6 +9,7 @@ const { validateRequest, validateNavData } = require('./validation');
 
 const app = express();
 app.use(express.json());
+app.use(express.static('public'));
 
 // 基金列表（内存元数据，与 data/ 下 JSON 文件对应）
 const FUNDS_META = [
@@ -25,6 +26,11 @@ const FUNDS_META = [
 ];
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
+const FUNDS = FUNDS_META.map((fund) => ({
+  ...fund,
+  fundCode: fund.code,
+  fundName: fund.name,
+}));
 
 function readFundNav(fundCode) {
   const filePath = path.join(DATA_DIR, fundCode + '.json');
@@ -37,13 +43,13 @@ function readFundNav(fundCode) {
 
 // GET /api/funds — 基金列表（代码 + 名称）
 app.get('/api/funds', (_req, res) => {
-  res.json({ funds: FUNDS_META });
+  res.json({ funds: FUNDS });
 });
 
 // GET /api/funds/:fundCode/nav — 读取指定基金的净值数据
 app.get('/api/funds/:fundCode/nav', (req, res) => {
   const { fundCode } = req.params;
-  const fund = FUNDS_META.find((f) => f.code === fundCode);
+  const fund = FUNDS.find((f) => f.code === fundCode);
   if (!fund) {
     return res.status(404).json({ error: { code: 'FUND_NOT_FOUND', message: '基金不存在' } });
   }
@@ -71,7 +77,7 @@ app.post('/api/backtest/dca-with-fund', (req, res) => {
     return res.status(400).json({ error: { code: e.code, message: e.message } });
   }
 
-  const fund = FUNDS_META.find((f) => f.code === fundCode);
+  const fund = FUNDS.find((f) => f.code === fundCode);
   if (!fund) {
     return res.status(404).json({ error: { code: 'FUND_NOT_FOUND', message: '基金不存在' } });
   }
@@ -98,9 +104,23 @@ app.post('/api/backtest/dca-with-fund', (req, res) => {
 
 // POST /api/backtest/dca — 原始接口（传入 navData）
 app.post('/api/backtest/dca', (req, res) => {
-  const { fundName, navData, startDate, endDate, periodicAmount, frequency } = req.body || {};
+  const { fundCode, fundName: fallbackFundName, navData, startDate, endDate, periodicAmount, frequency } = req.body || {};
 
-  const reqErrors = validateRequest(req.body || {});
+  // 优先使用 fundCode 查找基金名称，否则降级使用 fundName
+  let actualFundName = fallbackFundName || '';
+  if (fundCode) {
+    const fund = FUNDS.find((f) => f.code === fundCode);
+    if (fund) {
+      actualFundName = fund.name;
+    } else if (!fallbackFundName) {
+      return res.status(400).json({
+        error: { code: 'INVALID_FUND_CODE', message: `未找到基金代码：${fundCode}` },
+      });
+    }
+  }
+
+  // 参数基本校验
+  const reqErrors = validateRequest({ fundName: actualFundName, navData, startDate, endDate, periodicAmount, frequency });
   if (reqErrors.length > 0) {
     return res.status(400).json({
       error: { code: reqErrors[0].code, message: reqErrors[0].message },
@@ -114,7 +134,7 @@ app.post('/api/backtest/dca', (req, res) => {
   }
 
   try {
-    const result = runBacktest({ fundName, navData, startDate, endDate, periodicAmount, frequency });
+    const result = runBacktest({ fundName: actualFundName, navData, startDate, endDate, periodicAmount, frequency });
     return res.json(result);
   } catch (err) {
     return res.status(400).json({ error: { code: err.code || 'CALCULATION_ERROR', message: err.message } });
