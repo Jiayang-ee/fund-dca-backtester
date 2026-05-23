@@ -101,11 +101,9 @@
           fundState.style.display = 'none';
           fundSelect.innerHTML = '<option value="">-- 请选择基金 --</option>';
           funds.forEach(f => {
-            const code = f.fundCode || f.code;
-            const name = f.fundName || f.name;
             const opt = document.createElement('option');
-            opt.value = code;
-            opt.textContent = `${name} (${code})`;
+            opt.value = f.fundCode;
+            opt.textContent = `${f.fundName} (${f.fundCode})`;
             fundSelect.appendChild(opt);
           });
           fundSelect.disabled = false;
@@ -153,10 +151,33 @@
         endDate: formData.get('endDate'),
         periodicAmount: Number(formData.get('periodicAmount')),
         frequency: formData.get('frequency'),
+        // 演示用净值数据（实际应从基金数据服务获取）
+        navData: [
+          { date: '2023-01-03', nav: 1.20 },
+          { date: '2023-01-10', nav: 1.18 },
+          { date: '2023-01-17', nav: 1.22 },
+          { date: '2023-01-24', nav: 1.19 },
+          { date: '2023-01-31', nav: 1.15 },
+          { date: '2023-02-07', nav: 1.21 },
+          { date: '2023-02-14', nav: 1.25 },
+          { date: '2023-02-21', nav: 1.23 },
+          { date: '2023-02-28', nav: 1.28 },
+          { date: '2023-03-07', nav: 1.26 },
+          { date: '2023-03-14', nav: 1.30 },
+          { date: '2023-03-21', nav: 1.27 },
+          { date: '2023-03-28', nav: 1.24 },
+          { date: '2023-04-04', nav: 1.22 },
+          { date: '2023-04-11', nav: 1.20 },
+          { date: '2023-04-18', nav: 1.18 },
+          { date: '2023-04-25', nav: 1.15 },
+          { date: '2023-05-02', nav: 1.19 },
+          { date: '2023-05-09', nav: 1.24 },
+          { date: '2023-05-16', nav: 1.22 },
+        ],
       };
 
       try {
-        const resp = await fetch('/api/backtest/dca-with-fund', {
+        const resp = await fetch('/api/backtest/dca', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
