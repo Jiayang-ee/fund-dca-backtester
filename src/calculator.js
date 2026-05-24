@@ -209,6 +209,7 @@ function runBacktest({ fundName, navData, startDate, endDate, periodicAmount, fr
       maxDrawdown: Math.round(maxDrawdown * 10000) / 10000,
       lumpSumReturnRate: Math.round(lumpSumReturnRate * 10000) / 10000,
     },
+    navHistory: sorted.filter(r => r.date >= firstNav.date && r.date <= lastNav.date),
     curves: {
       dca: dcaCurve,
       lumpSum: lumpSumCurve,

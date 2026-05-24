@@ -7,8 +7,9 @@ FN:35,generateWeeklySchedule
 FN:50,generateMonthlySchedule
 FN:80,computeMaxDrawdown
 FN:104,runBacktest
-FNF:7
-FNH:7
+FN:212,(anonymous_7)
+FNF:8
+FNH:8
 FNDA:17,findNavOnOrAfter
 FNDA:26,(anonymous_1)
 FNDA:6,findNavOnOrBefore
@@ -16,6 +17,7 @@ FNDA:3,generateWeeklySchedule
 FNDA:8,generateMonthlySchedule
 FNDA:9,computeMaxDrawdown
 FNDA:8,runBacktest
+FNDA:20,(anonymous_7)
 DA:5,1
 DA:11,26
 DA:18,6
@@ -112,9 +114,10 @@ DA:195,6
 DA:197,6
 DA:199,6
 DA:201,6
-DA:219,1
-LF:97
-LH:90
+DA:212,20
+DA:220,1
+LF:98
+LH:91
 BRDA:11,0,0,17
 BRDA:11,0,1,0
 BRDA:20,1,0,19
@@ -157,8 +160,10 @@ BRDA:195,19,0,6
 BRDA:195,19,1,0
 BRDA:199,20,0,6
 BRDA:199,20,1,0
-BRF:42
-BRH:32
+BRDA:212,21,0,20
+BRDA:212,21,1,20
+BRF:44
+BRH:34
 end_of_record
 TN:
 SF:src/validation.js
