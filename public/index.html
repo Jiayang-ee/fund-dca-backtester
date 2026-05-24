@@ -4,87 +4,568 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>基金定投回测工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; background: #f5f5f5; }
-    h1 { color: #333; }
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #444; }
-    input, select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-    select { appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.75rem center; padding-right: 2rem; }
-    button { background: #0070f3; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; font-size: 1rem; cursor: pointer; }
-    button:disabled { background: #aaa; cursor: not-allowed; }
-    button:hover:not(:disabled) { background: #0051a8; }
-    .error { color: #d32f2f; margin-top: 0.25rem; font-size: 0.875rem; }
-    .state-msg { padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.9rem; }
-    .loading { background: #e3f2fd; color: #1565c0; }
-    .empty { background: #fff3e0; color: #e65100; }
-    .error-state { background: #ffebee; color: #c62828; }
-    #result { background: #fff; padding: 1rem; border-radius: 4px; margin-top: 1rem; }
-    #result h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: #333; }
-    .result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #eee; }
-    .result-row:last-child { border-bottom: none; }
-    .result-label { color: #666; }
-    .result-value { font-weight: 600; color: #333; }
-    .positive { color: #2e7d32; }
-    .negative { color: #c62828; }
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-light: #dbeafe;
+      --positive: #059669;
+      --positive-light: #d1fae5;
+      --negative: #dc2626;
+      --negative-light: #fee2e2;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.375rem 0.875rem;
+      border-radius: 100px;
+      margin-bottom: 1rem;
+      letter-spacing: 0.025em;
+      text-transform: uppercase;
+    }
+
+    .header h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.025em;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .card-section {
+      padding: 1.75rem;
+    }
+
+    .card-section + .card-section {
+      border-top: 1px solid var(--border-light);
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input,
+    .form-group select {
+      height: 48px;
+      padding: 0 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+      transition: all 0.2s ease;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .form-group select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.75rem;
+      cursor: pointer;
+    }
+
+    .form-group input:hover,
+    .form-group select:hover {
+      border-color: var(--text-muted);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .form-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Button */
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      height: 52px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 0.5rem;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .btn-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* State Messages */
+    .state-msg {
+      display: none;
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .state-msg.visible {
+      display: block;
+    }
+
+    .state-msg.loading {
+      background: var(--accent-light);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .state-msg.empty {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .state-msg.error-state {
+      background: var(--negative-light);
+      color: var(--negative);
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Results */
+    #result {
+      display: none;
+    }
+
+    #result.visible {
+      display: block;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .result-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .result-badge {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.625rem;
+      border-radius: 100px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.375rem;
+      font-weight: 500;
+    }
+
+    .metric-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-primary);
+    }
+
+    .metric-value.positive { color: var(--positive); }
+    .metric-value.negative { color: var(--negative); }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Comparison Section */
+    .comparison-section {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+    }
+
+    .comparison-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.625rem 0;
+    }
+
+    .comparison-row + .comparison-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .comparison-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .comparison-value {
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.25rem 0;
+    }
+
+    .highlight-row {
+      background: var(--accent-light);
+      margin: 0 -1.25rem;
+      padding: 1rem 1.25rem;
+      border-radius: 0;
+    }
+
+    .highlight-row .comparison-label {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .highlight-row .comparison-value {
+      color: var(--accent);
+    }
+
+    /* Charts */
+    .chart-section {
+      margin-top: 1.5rem;
+    }
+
+    .chart-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .chart-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .chart-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 240px;
+    }
+
+    /* Error message */
+    .form-error {
+      color: var(--negative);
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    .form-error.visible {
+      display: block;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container {
+        padding: 2rem 1rem;
+      }
+
+      .header h1 {
+        font-size: 1.75rem;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .card-section {
+        padding: 1.25rem;
+      }
+
+      .chart-container {
+        height: 200px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>基金定投回测工具</h1>
+  <div class="container">
+    <header class="header">
+      <div class="header-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+        基金投资
+      </div>
+      <h1>定投回测工具</h1>
+      <p>智能分析基金定投收益，轻松比较定投与一次性买入</p>
+    </header>
 
-  <div id="fund-state" class="state-msg loading" style="display:none">加载基金列表中...</div>
+    <div class="card">
+      <div class="card-section">
+        <div class="section-title">回测参数</div>
 
-  <form id="backtest-form">
-    <div class="form-group">
-      <label for="fund-select">选择基金</label>
-      <select id="fund-select" name="fundCode" required>
-        <option value="">-- 请选择基金 --</option>
-      </select>
+        <div id="fund-state" class="state-msg loading">
+          <div class="spinner"></div>
+          <span>加载基金列表中...</span>
+        </div>
+
+        <form id="backtest-form">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="fund-select">选择基金</label>
+              <select id="fund-select" name="fundCode" required>
+                <option value="">-- 请选择基金 --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="start-date">开始日期</label>
+              <input type="date" id="start-date" name="startDate" value="2023-01-01" required />
+            </div>
+
+            <div class="form-group">
+              <label for="end-date">结束日期</label>
+              <input type="date" id="end-date" name="endDate" value="2024-12-31" required />
+            </div>
+
+            <div class="form-group">
+              <label for="amount">每期定投金额</label>
+              <input type="number" id="amount" name="periodicAmount" value="1000" min="1" required />
+            </div>
+
+            <div class="form-group">
+              <label for="frequency">定投频率</label>
+              <select id="frequency" name="frequency">
+                <option value="weekly">每周</option>
+                <option value="monthly" selected>每月</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+              <polyline points="16 7 22 7 22 13"></polyline>
+            </svg>
+            <span id="btn-text">开始回测</span>
+          </button>
+          <div id="form-error" class="form-error"></div>
+        </form>
+      </div>
+
+      <div id="result" class="card-section">
+        <div class="section-title">回测结果</div>
+        <div id="result-content"></div>
+        <div id="chart-section" class="chart-section" style="display:none">
+          <div class="chart-card">
+            <div class="chart-title">基金净值走势</div>
+            <div class="chart-container">
+              <canvas id="navChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">DCA vs 一次性买入对比</div>
+            <div class="chart-container">
+              <canvas id="comparisonChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div class="form-group">
-      <label for="start-date">开始日期</label>
-      <input type="date" id="start-date" name="startDate" value="2023-01-01" required />
-    </div>
-
-    <div class="form-group">
-      <label for="end-date">结束日期</label>
-      <input type="date" id="end-date" name="endDate" value="2024-12-31" required />
-    </div>
-
-    <div class="form-group">
-      <label for="amount">每期定投金额（元）</label>
-      <input type="number" id="amount" name="periodicAmount" value="1000" min="1" required />
-    </div>
-
-    <div class="form-group">
-      <label for="frequency">定投频率</label>
-      <select id="frequency" name="frequency">
-        <option value="weekly">每周</option>
-        <option value="monthly" selected>每月</option>
-      </select>
-    </div>
-
-    <button type="submit" id="submit-btn">开始回测</button>
-    <div id="form-error" class="error" style="display:none;margin-top:0.5rem;"></div>
-  </form>
-
-  <div id="result" style="display:none"></div>
+  </div>
 
   <script>
     const fundSelect = document.getElementById('fund-select');
     const fundState = document.getElementById('fund-state');
     const backtestForm = document.getElementById('backtest-form');
     const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
     const formError = document.getElementById('form-error');
     const resultDiv = document.getElementById('result');
+    const resultContent = document.getElementById('result-content');
+    const chartSection = document.getElementById('chart-section');
+
+    let navChartInstance = null;
+    let comparisonChartInstance = null;
 
     // 加载基金列表
     async function loadFunds() {
-      fundState.style.display = 'block';
-      fundState.className = 'state-msg loading';
-      fundState.textContent = '加载基金列表中...';
+      fundState.classList.add('visible', 'loading');
+      fundState.classList.remove('empty', 'error-state');
+      fundState.innerHTML = '<div class="spinner"></div><span>加载基金列表中...</span>';
       fundSelect.disabled = true;
 
       try {
@@ -94,55 +575,239 @@
         const funds = data.funds || [];
 
         if (funds.length === 0) {
-          fundState.className = 'state-msg empty';
-          fundState.textContent = '暂无基金数据';
+          fundState.className = 'state-msg visible empty';
+          fundState.innerHTML = '暂无基金数据';
           fundSelect.innerHTML = '<option value="">-- 暂无可用基金 --</option>';
         } else {
-          fundState.style.display = 'none';
+          fundState.classList.remove('visible');
           fundSelect.innerHTML = '<option value="">-- 请选择基金 --</option>';
           funds.forEach(f => {
+            const code = f.fundCode || f.code;
+            const name = f.fundName || f.name;
             const opt = document.createElement('option');
-            opt.value = f.fundCode;
-            opt.textContent = `${f.fundName} (${f.fundCode})`;
+            opt.value = code;
+            opt.textContent = `${name} (${code})`;
             fundSelect.appendChild(opt);
           });
           fundSelect.disabled = false;
         }
       } catch (err) {
-        fundState.className = 'state-msg error-state';
-        fundState.textContent = '获取基金列表失败，请刷新重试';
+        fundState.className = 'state-msg visible error-state';
+        fundState.innerHTML = '获取基金列表失败，请刷新重试';
         fundSelect.innerHTML = '<option value="">-- 加载失败 --</option>';
         console.error('Failed to load funds:', err);
       }
     }
 
     // 格式化数字
+    function fmtMoney(v) {
+      return '¥' + v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     function fmtRate(v) {
       return (v * 100).toFixed(2) + '%';
+    }
+
+    // 渲染图表
+    function renderCharts(data) {
+      chartSection.style.display = 'block';
+
+      // 基金净值走势图
+      const navHistory = data.navHistory || [];
+      if (navHistory.length > 0) {
+        const navLabels = navHistory.map(item => item.date);
+        const navValues = navHistory.map(item => item.nav);
+
+        if (navChartInstance) navChartInstance.destroy();
+        navChartInstance = new Chart(document.getElementById('navChart'), {
+          type: 'line',
+          data: {
+            labels: navLabels,
+            datasets: [{
+              label: '基金净值',
+              data: navValues,
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              intersect: false,
+              mode: 'index',
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => '净值: ' + ctx.parsed.y.toFixed(4),
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { maxTicksLimit: 8, color: '#94a3b8' },
+                grid: { display: false },
+              },
+              y: {
+                ticks: { color: '#94a3b8' },
+                grid: { color: '#e2e8f0' },
+              }
+            }
+          }
+        });
+      }
+
+      // DCA vs 一次性买入对比图
+      const curves = data.curves || {};
+      const dcaCurve = curves.dca || [];
+      const lumpSumCurve = curves.lumpSum || [];
+
+      if (dcaCurve.length > 0 || lumpSumCurve.length > 0) {
+        const allDates = [...new Set([
+          ...dcaCurve.map(item => item.date),
+          ...lumpSumCurve.map(item => item.date)
+        ])].sort();
+
+        const dcaValues = allDates.map(date => {
+          const point = dcaCurve.find(item => item.date === date);
+          return point ? point.value : null;
+        });
+
+        const lumpSumValues = allDates.map(date => {
+          const point = lumpSumCurve.find(item => item.date === date);
+          return point ? point.value : null;
+        });
+
+        if (comparisonChartInstance) comparisonChartInstance.destroy();
+        comparisonChartInstance = new Chart(document.getElementById('comparisonChart'), {
+          type: 'line',
+          data: {
+            labels: allDates,
+            datasets: [
+              {
+                label: '定投策略',
+                data: dcaValues,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+              },
+              {
+                label: '一次性买入',
+                data: lumpSumValues,
+                borderColor: '#059669',
+                backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              intersect: false,
+              mode: 'index',
+            },
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { usePointStyle: true, padding: 20, color: '#475569' }
+              },
+              tooltip: {
+                callbacks: {
+                  label: ctx => ctx.dataset.label + ': ' + fmtMoney(ctx.parsed.y),
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { maxTicksLimit: 8, color: '#94a3b8' },
+                grid: { display: false },
+              },
+              y: {
+                ticks: {
+                  color: '#94a3b8',
+                  callback: v => '¥' + v.toLocaleString('zh-CN'),
+                },
+                grid: { color: '#e2e8f0' },
+              }
+            }
+          }
+        });
+      }
     }
 
     // 渲染结果
     function renderResult(data) {
       const s = data.summary;
-      resultDiv.innerHTML = `
-        <h2>${data.fundName} 回测结果</h2>
-        <div class="result-row"><span class="result-label">总投入</span><span class="result-value">¥${s.totalInvested.toFixed(2)}</span></div>
-        <div class="result-row"><span class="result-label">期末资产</span><span class="result-value">¥${s.endingAssets.toFixed(2)}</span></div>
-        <div class="result-row"><span class="result-label">总收益</span><span class="result-value ${s.totalProfit >= 0 ? 'positive' : 'negative'}">¥${s.totalProfit.toFixed(2)} (${fmtRate(s.totalReturnRate)})</span></div>
-        <div class="result-row"><span class="result-label">最大回撤</span><span class="result-value ${s.maxDrawdown < 0 ? 'negative' : ''}">${fmtRate(s.maxDrawdown)}</span></div>
-        <div class="result-row"><span class="result-label">定投收益率</span><span class="result-value ${s.totalReturnRate >= 0 ? 'positive' : 'negative'}">${fmtRate(s.totalReturnRate)}</span></div>
-        <div class="result-row"><span class="result-label">一次性买入收益率</span><span class="result-value ${s.lumpSumReturnRate >= 0 ? 'positive' : 'negative'}">${fmtRate(s.lumpSumReturnRate)}</span></div>
+      const profitClass = s.totalProfit >= 0 ? 'positive' : 'negative';
+      const dcaReturnClass = s.totalReturnRate >= 0 ? 'positive' : 'negative';
+      const lumpSumReturnClass = s.lumpSumReturnRate >= 0 ? 'positive' : 'negative';
+
+      resultContent.innerHTML = `
+        <div class="result-header">
+          <div class="result-title">${data.fundName}</div>
+          <div class="result-badge">回测报告</div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">总投入</div>
+            <div class="metric-value">${fmtMoney(s.totalInvested)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">期末资产</div>
+            <div class="metric-value">${fmtMoney(s.endingAssets)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">总收益</div>
+            <div class="metric-value ${profitClass}">${fmtMoney(s.totalProfit)}</div>
+            <div class="metric-sub">${fmtRate(s.totalReturnRate)}</div>
+          </div>
+        </div>
+
+        <div class="comparison-section">
+          <div class="comparison-row">
+            <span class="comparison-label">定投收益率</span>
+            <span class="comparison-value ${dcaReturnClass}">${fmtRate(s.totalReturnRate)}</span>
+          </div>
+          <div class="comparison-row">
+            <span class="comparison-label">最大回撤</span>
+            <span class="comparison-value ${s.maxDrawdown < 0 ? 'negative' : ''}">${fmtRate(s.maxDrawdown)}</span>
+          </div>
+          <div class="divider"></div>
+          <div class="comparison-row highlight-row">
+            <span class="comparison-label">一次性买入收益率</span>
+            <span class="comparison-value ${lumpSumReturnClass}">${fmtRate(s.lumpSumReturnRate)}</span>
+          </div>
+        </div>
       `;
-      resultDiv.style.display = 'block';
+
+      // 渲染图表
+      renderCharts(data);
+
+      resultDiv.classList.add('visible', 'animate-in');
     }
 
     // 提交回测
     backtestForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      formError.style.display = 'none';
-      resultDiv.style.display = 'none';
+      formError.classList.remove('visible');
+      resultDiv.classList.remove('visible', 'animate-in');
+      chartSection.style.display = 'none';
       submitBtn.disabled = true;
-      submitBtn.textContent = '计算中...';
+      btnText.textContent = '计算中...';
 
       const formData = new FormData(backtestForm);
       const payload = {
@@ -151,33 +816,10 @@
         endDate: formData.get('endDate'),
         periodicAmount: Number(formData.get('periodicAmount')),
         frequency: formData.get('frequency'),
-        // 演示用净值数据（实际应从基金数据服务获取）
-        navData: [
-          { date: '2023-01-03', nav: 1.20 },
-          { date: '2023-01-10', nav: 1.18 },
-          { date: '2023-01-17', nav: 1.22 },
-          { date: '2023-01-24', nav: 1.19 },
-          { date: '2023-01-31', nav: 1.15 },
-          { date: '2023-02-07', nav: 1.21 },
-          { date: '2023-02-14', nav: 1.25 },
-          { date: '2023-02-21', nav: 1.23 },
-          { date: '2023-02-28', nav: 1.28 },
-          { date: '2023-03-07', nav: 1.26 },
-          { date: '2023-03-14', nav: 1.30 },
-          { date: '2023-03-21', nav: 1.27 },
-          { date: '2023-03-28', nav: 1.24 },
-          { date: '2023-04-04', nav: 1.22 },
-          { date: '2023-04-11', nav: 1.20 },
-          { date: '2023-04-18', nav: 1.18 },
-          { date: '2023-04-25', nav: 1.15 },
-          { date: '2023-05-02', nav: 1.19 },
-          { date: '2023-05-09', nav: 1.24 },
-          { date: '2023-05-16', nav: 1.22 },
-        ],
       };
 
       try {
-        const resp = await fetch('/api/backtest/dca', {
+        const resp = await fetch('/api/backtest/dca-with-fund', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -185,16 +827,16 @@
         const data = await resp.json();
         if (data.error) {
           formError.textContent = data.error.message || '回测失败';
-          formError.style.display = 'block';
+          formError.classList.add('visible');
         } else {
           renderResult(data);
         }
       } catch (err) {
         formError.textContent = '请求失败，请检查网络';
-        formError.style.display = 'block';
+        formError.classList.add('visible');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = '开始回测';
+        btnText.textContent = '开始回测';
       }
     });
 
