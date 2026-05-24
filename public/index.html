@@ -579,7 +579,7 @@
           fundState.innerHTML = '暂无基金数据';
           fundSelect.innerHTML = '<option value="">-- 暂无可用基金 --</option>';
         } else {
-          fundState.classList.remove('visible');
+          fundState.classList.remove('visible', 'loading');
           fundSelect.innerHTML = '<option value="">-- 请选择基金 --</option>';
           funds.forEach(f => {
             const code = f.fundCode || f.code;
