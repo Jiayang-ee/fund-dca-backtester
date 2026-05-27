@@ -5,7 +5,7 @@ describe('GET /api/funds', () => {
   test('返回10只基金列表', async () => {
     const res = await request(app).get('/api/funds');
     expect(res.status).toBe(200);
-    expect(res.body.funds).toHaveLength(10);
+    expect(res.body.funds).toHaveLength(11);
     expect(res.body.funds[0]).toHaveProperty('code');
     expect(res.body.funds[0]).toHaveProperty('name');
   });
