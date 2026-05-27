@@ -15,6 +15,7 @@ const FUNDS = [
   { code: '270008', name: '广发稳健增长混合' },
   { code: '360008', name: '光大增长混合' },
   { code: '460005', name: '华泰柏瑞价值增长混合' },
+  { code: '012922', name: '易方达全球成长精选混合(QDII)C' },
 ];
 
 function fetchPage(fundCode, pageIndex) {
