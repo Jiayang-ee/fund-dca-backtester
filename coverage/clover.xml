@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1779519432054" clover="3.2.0">
-  <project timestamp="1779519432054" name="All files">
-    <metrics statements="141" coveredstatements="132" conditionals="83" coveredconditionals="71" methods="13" coveredmethods="13" elements="237" coveredelements="216" complexity="0" loc="141" ncloc="141" packages="1" files="2" classes="2"/>
-    <file name="calculator.js" path="/Users/wjy/multica_workspaces_desktop-api.multica.ai/2fd2732f-4029-492d-ab09-8a3845906e26/e35ab0a7/workdir/repo/src/calculator.js">
-      <metrics statements="97" coveredstatements="90" conditionals="42" coveredconditionals="32" methods="7" coveredmethods="7"/>
+<coverage generated="1779596186665" clover="3.2.0">
+  <project timestamp="1779596186665" name="All files">
+    <metrics statements="142" coveredstatements="133" conditionals="85" coveredconditionals="73" methods="14" coveredmethods="14" elements="241" coveredelements="220" complexity="0" loc="142" ncloc="142" packages="1" files="2" classes="2"/>
+    <file name="calculator.js" path="/Users/wjy/multica_workspaces_desktop-api.multica.ai/2fd2732f-4029-492d-ab09-8a3845906e26/980d869c/workdir/fund-dca-backtester/src/calculator.js">
+      <metrics statements="98" coveredstatements="91" conditionals="44" coveredconditionals="34" methods="8" coveredmethods="8"/>
       <line num="5" count="1" type="stmt"/>
       <line num="11" count="26" type="cond" truecount="1" falsecount="1"/>
       <line num="18" count="6" type="stmt"/>
@@ -100,9 +100,10 @@
       <line num="197" count="6" type="stmt"/>
       <line num="199" count="6" type="cond" truecount="1" falsecount="1"/>
       <line num="201" count="6" type="stmt"/>
-      <line num="219" count="1" type="stmt"/>
+      <line num="212" count="20" type="cond" truecount="2" falsecount="0"/>
+      <line num="220" count="1" type="stmt"/>
     </file>
-    <file name="validation.js" path="/Users/wjy/multica_workspaces_desktop-api.multica.ai/2fd2732f-4029-492d-ab09-8a3845906e26/e35ab0a7/workdir/repo/src/validation.js">
+    <file name="validation.js" path="/Users/wjy/multica_workspaces_desktop-api.multica.ai/2fd2732f-4029-492d-ab09-8a3845906e26/980d869c/workdir/fund-dca-backtester/src/validation.js">
       <metrics statements="44" coveredstatements="42" conditionals="41" coveredconditionals="39" methods="6" coveredmethods="6"/>
       <line num="11" count="37" type="stmt"/>
       <line num="22" count="14" type="stmt"/>
